@@ -1,0 +1,9 @@
+data/
+minio_data/
+postgres/
+!postgres/airflow_init.sql
+airflow/*
+!airflow/dags/
+!airflow/dags/**
+!airflow/data
+!airflow/data/**

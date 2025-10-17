@@ -1,0 +1,17 @@
+version: 2
+
+models:
+  - name: int_log_cnt_event_type
+    description: "Intermediate model for logging event types"
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - type
+            - created_on
+    columns:
+      - name: type
+        description: "Type of the GitHub event"
+      - name: cnt_event_type
+        description: "Count of events of this type"
+      - name: created_on
+        description: "Timestamp when the log entry was created"

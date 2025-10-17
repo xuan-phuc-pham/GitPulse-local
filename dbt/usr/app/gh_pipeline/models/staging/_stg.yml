@@ -1,0 +1,16 @@
+version: 2
+
+sources:
+  - name: src_gharchive_staging
+    database: "gh_archive"
+    description: "Processed raw data from GH Archive"
+    schema: "dev"
+    tables:
+      - name: raw_events
+        description: "Raw events data from GH Archive"
+      - name: raw_repos
+        description: "Raw repositories data from GH Archive"
+      - name: raw_users
+        description: "Raw users data from GH Archive"
+      - name: raw_orgs
+        description: "Raw organizations data from GH Archive"

@@ -1,0 +1,12 @@
+gh_pipeline:
+  outputs:
+    dev:
+      dbname: gh_archive
+      host: db
+      pass: postgres
+      port: 5432
+      schema: dev
+      threads: 4
+      type: postgres
+      user: postgres
+  target: dev

@@ -1,6 +1,6 @@
 data/
 minio_data/
-postgres/
+postgres/*
 !postgres/airflow_init.sql
 !postgres/superset_init.sql
 airflow/*

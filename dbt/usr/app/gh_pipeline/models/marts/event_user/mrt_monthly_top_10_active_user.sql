@@ -1,3 +1,7 @@
+{{ config(
+    tags = ['monthly']
+) }}
+
 with monthly_active_users as (
     SELECT * FROM {{ ref('int_log_10_most_active_user_monthly') }}
 ),

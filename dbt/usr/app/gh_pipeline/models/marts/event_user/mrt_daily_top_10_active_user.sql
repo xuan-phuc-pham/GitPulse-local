@@ -1,3 +1,7 @@
+{{ config(
+    tags = ['daily']
+) }}
+
 with daily_active_users as (
     SELECT * FROM {{ ref('int_yesterday_cnt_event_user') }}
 ),

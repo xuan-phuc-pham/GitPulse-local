@@ -1,6 +1,7 @@
 {{ config(
     materialized='incremental',
-    unique_key=['actor_id', 'created_on']
+    unique_key=['actor_id', 'created_on'],
+    tags = ['daily']
 ) }}
 
 with cnt_yesterday_event_user as (

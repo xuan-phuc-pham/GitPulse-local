@@ -1,6 +1,7 @@
 {{ config(
     materialized='incremental',
-    unique_key=['repo_id', 'created_on']
+    tags = ['daily'],
+    unique_key=['repo_id', 'created_on'],
 ) }}
 
 with cnt_yesterday_event_repo as (

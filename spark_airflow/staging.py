@@ -69,7 +69,7 @@ repo_df = spark.read.schema(repo_schema)\
 .csv(f"s3a://airflow/gh_data/repos/repos_{target_date}_*.csv").dropDuplicates(['id'])
 
 
-event_df.write.parquet(f"s3a://airflow/gh_data_staging/events/{target_date}/")
-user_df.write.parquet(f"s3a://airflow/gh_data_staging/users/{target_date}/")
-org_df.write.parquet(f"s3a://airflow/gh_data_staging/orgs/{target_date}/")
-repo_df.write.parquet(f"s3a://airflow/gh_data_staging/repos/{target_date}/")
+event_df.write.mode("overwrite").parquet(f"s3a://airflow/gh_data_staging/events/{target_date}/")
+user_df.write.mode("overwrite").parquet(f"s3a://airflow/gh_data_staging/users/{target_date}/")
+org_df.write.mode("overwrite").parquet(f"s3a://airflow/gh_data_staging/orgs/{target_date}/")
+repo_df.write.mode("overwrite").parquet(f"s3a://airflow/gh_data_staging/repos/{target_date}/")

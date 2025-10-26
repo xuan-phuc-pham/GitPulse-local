@@ -1,3 +1,7 @@
+{{ config(
+    tags = ['daily']
+) }}
+
 with stg_events as (
     SELECT * FROM {{ ref('stg_events') }}
 ),

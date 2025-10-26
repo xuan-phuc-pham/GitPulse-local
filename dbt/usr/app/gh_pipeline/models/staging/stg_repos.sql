@@ -1,3 +1,7 @@
+{{ config(
+    tags = ['daily']
+) }}
+
 with source_data as (
     SELECT * FROM {{ source('src_gharchive_staging', 'raw_repos') }}
 ),

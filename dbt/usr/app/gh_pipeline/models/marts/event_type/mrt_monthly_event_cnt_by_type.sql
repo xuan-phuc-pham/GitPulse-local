@@ -1,3 +1,7 @@
+{{ config(
+    tags = ['monthly']
+) }}
+
 with cnt_log as (
     SELECT * FROM {{ ref('int_log_cnt_event_type') }}
 ),

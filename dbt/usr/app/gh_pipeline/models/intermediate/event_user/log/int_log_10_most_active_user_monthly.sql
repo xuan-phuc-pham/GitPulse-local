@@ -1,6 +1,7 @@
 {{ config(
     materialized='incremental',
-    unique_key=['actor_id', 'created_month']
+    unique_key=['actor_id', 'created_month'],
+    tags = ['monthly']
 ) }}
 
 with stg_events as (

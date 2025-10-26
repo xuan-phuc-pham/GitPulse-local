@@ -11,4 +11,10 @@ def clean_temp_files(**context):
         s3_conn.delete_objects(bucket='airflow', keys=[f'gh_data/orgs/orgs_{date}_{hour}.csv'])
 
         
-    
+def clean_temp_parquet(**context):
+    s3_conn = S3Hook(aws_conn_id='minio_conn')
+    date = (context['logical_date'] - timedelta(days=1)).strftime('%Y-%m-%d')
+    s3_conn.delete_objects(bucket='airflow', keys=[f'gh_data_staging/events/{date}'])
+    s3_conn.delete_objects(bucket='airflow', keys=[f'gh_data_staging/users/{date}'])
+    s3_conn.delete_objects(bucket='airflow', keys=[f'gh_data_staging/repos/{date}'])
+    s3_conn.delete_objects(bucket='airflow', keys=[f'gh_data_staging/orgs/{date}'])

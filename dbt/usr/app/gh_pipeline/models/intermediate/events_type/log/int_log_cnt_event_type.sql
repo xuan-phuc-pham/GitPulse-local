@@ -1,6 +1,7 @@
 {{ config(
     materialized='incremental',
-    unique_key=['type', 'created_on']
+    unique_key=['type', 'created_on'],
+    tags = ['daily']
 ) }}
 
 with stg_events as (

@@ -14,7 +14,18 @@ def clean_temp_files(**context):
 def clean_temp_parquet(**context):
     s3_conn = S3Hook(aws_conn_id='minio_conn')
     date = (context['logical_date'] - timedelta(days=1)).strftime('%Y-%m-%d')
-    s3_conn.delete_objects(bucket='airflow', keys=[f'gh_data_staging/events/{date}'])
-    s3_conn.delete_objects(bucket='airflow', keys=[f'gh_data_staging/users/{date}'])
-    s3_conn.delete_objects(bucket='airflow', keys=[f'gh_data_staging/repos/{date}'])
-    s3_conn.delete_objects(bucket='airflow', keys=[f'gh_data_staging/orgs/{date}'])
+
+    prefixes = [
+        f"gh_data_staging/events/{date}/",
+        f"gh_data_staging/users/{date}/",
+        f"gh_data_staging/repos/{date}/",
+        f"gh_data_staging/orgs/{date}/"
+    ]
+
+    for prefix in prefixes:
+        keys = s3_conn.list_keys(bucket_name='airflow', prefix=prefix)
+        if keys:
+            s3_conn.delete_objects(bucket='airflow', keys=keys)
+            print(f"✅ Deleted {len(keys)} objects under {prefix}")
+        else:
+            print(f"⚠️ No objects found under {prefix}")

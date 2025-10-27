@@ -12,8 +12,9 @@ from function.import_to_pg import import_to_postgres
 default_args = {
     'owner': 'xpham',
     'depends_on_past': True,
-    'start_date': datetime(2025, 10, 18),
-    'retries': 1,
+    'start_date': datetime(2025, 8, 2 ),
+    'end_date': datetime(2025, 8, 4 ),
+    'retries': 5,
     'retry_delay': timedelta(minutes=1),
 }
 
@@ -37,10 +38,10 @@ def dbt_daily_run(**context):
         working_dir='/usr/app/gh_pipeline',
         command=f"run --vars '{{\"logical_previous_day\":\"{date}\"}}' -m tag:daily",
         mounts=[
-            Mount(source='/home/xpham/dp_gh/dbt/usr/app', target='/usr/app', type='bind'),
-            Mount(source='/home/xpham/dp_gh/dbt', target='/root/.dbt', type='bind')
+            Mount(source='/home/xpham/GitPulseLocal/dbt/usr/app', target='/usr/app', type='bind'),
+            Mount(source='/home/xpham/GitPulseLocal/dbt', target='/root/.dbt', type='bind')
         ],
-        network_mode='dp_gh_nw-1',
+        network_mode='gitpulselocal_nw-1',
         docker_url='unix://var/run/docker.sock',
         auto_remove='success'
     )
@@ -50,7 +51,7 @@ with DAG(
     dag_id='gh_archive_pipeline_v1',
     default_args=default_args,
     schedule="0 6 * * *",  # Runs every day at 6:00
-    catchup=False,
+    catchup=True,
 ) as dag:
 
     ingest_task = PythonOperator(

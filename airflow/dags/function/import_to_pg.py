@@ -3,6 +3,13 @@ from sqlalchemy import create_engine
 from datetime import datetime, timedelta
 from airflow.hooks.base import BaseHook
 from airflow.providers.postgres.hooks.postgres import PostgresHook
+from airflow.providers.amazon.aws.hooks.s3 import S3Hook
+
+def list_parquet_files_from_minio(minio_conn_id, bucket_name, prefix):
+    hook = S3Hook(aws_conn_id=minio_conn_id)
+    keys = hook.list_keys(bucket_name=bucket_name, prefix=prefix)
+    parquet_files = [k for k in keys if k.endswith(".parquet")]
+    return parquet_files
 
 def create_temp_tables(hook):
     hook.run( """
@@ -64,7 +71,7 @@ def check_and_create_tables(hook):
     """)
 
 
-def read_partitioned_parquet_from_minio(date, minio_conn, hook):
+def import_s3_pg(date, minio_conn, hook):
     engine = hook.get_sqlalchemy_engine()
     key = minio_conn.extra_dejson.get("aws_access_key_id")
     secret = minio_conn.extra_dejson.get("aws_secret_access_key")
@@ -73,68 +80,90 @@ def read_partitioned_parquet_from_minio(date, minio_conn, hook):
     print("Connection:",[key, secret, endpoint_url])
 
     # The root directory of your Parquet dataset
-    event_path = f"s3://airflow/gh_data_staging/events/{date}/"
-    user_path = f"s3://airflow/gh_data_staging/users/{date}/"
-    org_path = f"s3://airflow/gh_data_staging/orgs/{date}/"
-    repo_path = f"s3://airflow/gh_data_staging/repos/{date}/"
 
-    # pandas will recursively read all partitions
+    spark_s3_prefix = "s3://"
+    bucket_name = "airflow"
+    prefix_dir = "gh_data_staging"
+    
+    events_parquet_files_names = list_parquet_files_from_minio(minio_conn_id = "minio_conn", bucket_name = bucket_name, prefix=f"{prefix_dir}/events/{date}")
+    users_parquet_files_names = list_parquet_files_from_minio(minio_conn_id = "minio_conn", bucket_name = bucket_name, prefix=f"{prefix_dir}/users/{date}")
+    repos_parquet_files_names = list_parquet_files_from_minio(minio_conn_id = "minio_conn", bucket_name = bucket_name, prefix=f"{prefix_dir}/repos/{date}")
+    orgs_parquet_files_names = list_parquet_files_from_minio(minio_conn_id = "minio_conn", bucket_name = bucket_name, prefix=f"{prefix_dir}/orgs/{date}")
 
-    event_df = pd.read_parquet(
-        event_path,
-        engine="pyarrow",
-        storage_options={
-            "key": key,
-            "secret": secret,
-            "client_kwargs": {
-                "endpoint_url": endpoint_url
-            }
-        }
+    #test
+    print(events_parquet_files_names)
+
+    hook.run(
+        f"""
+            DELETE FROM dev.raw_events
+            WHERE DATE(created_at) = '{date}';
+        """
     )
 
-    user_df = pd.read_parquet(
-        user_path,
-        engine="pyarrow",
-        storage_options={
-            "key": key,
-            "secret": secret,
-            "client_kwargs": {
-                "endpoint_url": endpoint_url
+    for filename in events_parquet_files_names:
+        event_parquet_path = f"{spark_s3_prefix}{bucket_name}/{filename}"
+        event_df = pd.read_parquet(
+            event_parquet_path,
+            engine="pyarrow",
+            storage_options={
+                "key": key,
+                "secret": secret,
+                "client_kwargs": {
+                    "endpoint_url": endpoint_url
+                }
             }
-        }
-    )
+        )
+        event_df.to_sql('raw_events', engine, schema='dev', if_exists='append', index=False)
+        del event_df
 
-    org_df = pd.read_parquet(
-        org_path,
-        engine="pyarrow",
-        storage_options={
-            "key": key,
-            "secret": secret,
-            "client_kwargs": {
-                "endpoint_url": endpoint_url
+    for filename in users_parquet_files_names:
+        users_parquet_path = f"{spark_s3_prefix}{bucket_name}/{filename}"
+        users_df = pd.read_parquet(
+            users_parquet_path,
+            engine="pyarrow",
+            storage_options={
+                "key": key,
+                "secret": secret,
+                "client_kwargs": {
+                    "endpoint_url": endpoint_url
+                }
             }
-        }
-    )
+        )
+        users_df.to_sql('raw_temp_users', engine, schema='temp', if_exists='append', index=False)
+        del users_df
 
-    repo_df = pd.read_parquet(
-        repo_path,
-        engine="pyarrow",
-        storage_options={
-            "key": key,
-            "secret": secret,
-            "client_kwargs": {
-                "endpoint_url": endpoint_url
+    for filename in repos_parquet_files_names:
+        repos_parquet_path = f"{spark_s3_prefix}{bucket_name}/{filename}"
+        repos_df = pd.read_parquet(
+            repos_parquet_path,
+            engine="pyarrow",
+            storage_options={
+                "key": key,
+                "secret": secret,
+                "client_kwargs": {
+                    "endpoint_url": endpoint_url
+                }
             }
-        }
-    )
-    print("DataFrames read from MinIO:")
-    # print("Events DataFrame:", event_df.head())
-    # print("Users DataFrame:", user_df.head())
-    # print("Orgs DataFrame:", org_df.head())
-    # print("Repos DataFrame:", repo_df.head())
-    event_df.to_sql('raw_events', engine, schema='dev', if_exists='append', index=False)
+        )
+        repos_df.to_sql('raw_temp_repos', engine, schema='temp', if_exists='append', index=False)
+        del repos_df
 
-    user_df.to_sql('raw_temp_users', engine, schema='temp', if_exists='replace', index=False)
+    for filename in orgs_parquet_files_names:
+        orgs_parquet_path = f"{spark_s3_prefix}{bucket_name}/{filename}"
+        orgs_df = pd.read_parquet(
+            orgs_parquet_path,
+            engine="pyarrow",
+            storage_options={
+                "key": key,
+                "secret": secret,
+                "client_kwargs": {
+                    "endpoint_url": endpoint_url
+                }
+            }
+        )
+        orgs_df.to_sql('raw_temp_orgs', engine, schema='temp', if_exists='append', index=False)
+        del orgs_df
+    
     hook.run(
         """
             INSERT INTO dev.raw_users (id, login, display_login, gravatar_id, url, avatar_url)
@@ -149,7 +178,7 @@ def read_partitioned_parquet_from_minio(date, minio_conn, hook):
             DROP TABLE temp.raw_temp_users;
         """
     )
-    org_df.to_sql('raw_temp_orgs', engine, schema='temp', if_exists='replace', index=False)
+
     hook.run(
         """
             INSERT INTO dev.raw_orgs (id, login, gravatar_id, url, avatar_url)
@@ -163,7 +192,7 @@ def read_partitioned_parquet_from_minio(date, minio_conn, hook):
             DROP TABLE temp.raw_temp_orgs;
         """
     )
-    repo_df.to_sql('raw_temp_repos', engine, schema='temp', if_exists='replace', index=False)
+
     hook.run(
         """
             INSERT INTO dev.raw_repos (id, name, url)
@@ -182,6 +211,6 @@ def import_to_postgres(**context):
     hook = PostgresHook(postgres_conn_id='pg_conn')
     check_and_create_tables(hook)
     create_temp_tables(hook)
-    read_partitioned_parquet_from_minio(date, BaseHook.get_connection("minio_conn"), hook)
+    import_s3_pg(date, BaseHook.get_connection("minio_conn"), hook)
 
 

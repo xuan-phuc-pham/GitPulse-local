@@ -12,11 +12,12 @@ from function.import_to_pg import import_to_postgres
 default_args = {
     'owner': 'xpham',
     'depends_on_past': True,
-    'start_date': datetime(2025, 8, 2 ),
-    'end_date': datetime(2025, 8, 4 ),
+    'start_date': datetime(2025, 9, 2 ),
+    # 'end_date': datetime(2025, 8, 4 ),
     'retries': 5,
     'retry_delay': timedelta(minutes=1),
 }
+
 
 def staging(**context):
     date = (context['logical_date'] - timedelta(days=1)).strftime('%Y-%m-%d')
@@ -48,7 +49,7 @@ def dbt_daily_run(**context):
     docker_task.execute(context=context)
 
 with DAG(
-    dag_id='gh_archive_pipeline_v1',
+    dag_id='gitpulse_daily_pipeline_v2',
     default_args=default_args,
     schedule="0 6 * * *",  # Runs every day at 6:00
     catchup=True,

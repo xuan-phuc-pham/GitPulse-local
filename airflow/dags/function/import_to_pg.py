@@ -37,7 +37,7 @@ def create_temp_tables(hook):
     """)
 
 def check_and_create_tables(hook):
-    hook.run( """
+    hook.run("""
     CREATE SCHEMA IF NOT EXISTS dev;
     CREATE TABLE IF NOT EXISTS dev.raw_events (
         id BIGINT PRIMARY KEY,
@@ -48,6 +48,7 @@ def check_and_create_tables(hook):
         created_at TIMESTAMP NOT NULL,
         org_id BIGINT
     );
+    CREATE INDEX IF NOT EXISTS idx_create_time ON dev.raw_events(created_at);
     CREATE TABLE IF NOT EXISTS dev.raw_users (
         id BIGINT PRIMARY KEY,
         login VARCHAR NOT NULL,
@@ -114,6 +115,7 @@ def import_s3_pg(date, minio_conn, hook):
             }
         )
         event_df.to_sql('raw_events', engine, schema='dev', if_exists='append', index=False)
+        print("inserted", filename)
         del event_df
 
     for filename in users_parquet_files_names:
@@ -130,6 +132,7 @@ def import_s3_pg(date, minio_conn, hook):
             }
         )
         users_df.to_sql('raw_temp_users', engine, schema='temp', if_exists='append', index=False)
+        print("inserted", filename)
         del users_df
 
     for filename in repos_parquet_files_names:
@@ -146,6 +149,7 @@ def import_s3_pg(date, minio_conn, hook):
             }
         )
         repos_df.to_sql('raw_temp_repos', engine, schema='temp', if_exists='append', index=False)
+        print("inserted", filename)
         del repos_df
 
     for filename in orgs_parquet_files_names:
@@ -162,6 +166,7 @@ def import_s3_pg(date, minio_conn, hook):
             }
         )
         orgs_df.to_sql('raw_temp_orgs', engine, schema='temp', if_exists='append', index=False)
+        print("inserted", filename)
         del orgs_df
     
     hook.run(

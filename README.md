@@ -4,7 +4,7 @@
 
 ## Overview
 
-This project implements an end to end data pipeline that **E**xtract github events data from [GH Archive API](https://www.gharchive.org/)** and stores them to a staging area. The staging data will be **T**ransformed, restructured and then **L**oaded to a local database as my Data Warehouse solution. From that, various data models will be built for visualisation and analysis.
+This project implements an end to end data pipeline that **E**xtract github events data from **[GH Archive API](https://www.gharchive.org/)** and stores them to a staging area. The staging data will be **T**ransformed, restructured and then **L**oaded to a local database as my Data Warehouse solution. From that, various data models will be built for visualisation and analysis.
 ## Tech stack
 
 The whole project is executed in **Docker containers** which contain the following components:
@@ -24,6 +24,119 @@ To pull the file JSON from the API:
 ```bash
 wget https://data.gharchive.org/<year>-<month>-<day>-<hour>.json.gz
 ```
+
+See [example of an event in json](#an-example-of-an-event-json)
+
+
+## Architechture
+
+The schema below demonstrates the structure of the project.
+![alt text](assets/images/archi.png)
+
+The infrastructure in the project includes:
+- **Containerisation - Docker**: Manage and run containers as different components in an isolated environment. The containers used in the projects are: **Minio**, **PostgreSQL**, **Apache Airflow**, **Apache Spark**, **Apache Superset** and **PgAdmin**.
+![(Image docker)](https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Docker_%28container_engine%29_logo.svg/2560px-Docker_%28container_engine%29_logo.svg.png)
+- **Workflow Orchestrator - Airflow**: Define, schedule, and monitor workflows. This tool also integrates many components by the connection and operators ( for database, storage, data processing workers, ... ) to execute in an efficient manner. In this project, Airflows handles and schedule tasks concerning MinioS3 storages, PostgreSQL database, Spark workers and dbt. 
+![(Image Airflow)](https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/AirflowLogo.svg/1200px-AirflowLogo.svg.png)
+- **Data Storage Solution - Minio S3**: Act as a data lake, it provides **object storage**, a scalable, durable, cloud-native way to store and retrieve large amounts of unstructured data. In this project, Minio S3 is used to store unstructured data pulled from the API ( under .csv files ), to store staging data ( under .parquet files, act as staging area ) before loading to the data warehouse.
+![(Image Minui)](https://blogs.ashrithgn.com/content/images/2020/01/MINIO_wordmark.png)
+- **Large data processing - Apache Spark**: designed to **process huge volumes of data**, often too large to fit on a single machine, using **distributed computing**.
+![Image spark](https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Apache_Spark_logo.svg/1200px-Apache_Spark_logo.svg.png)
+- **Data warehouse Solution - PostgreSQL**: plays the role of a **relational database (RDBMS)**, and when used as a **data warehouse**, it becomes the central system where **cleaned, structured, and query-optimized data** is stored for analytics, reporting, and decision-making. PostgreSQL are used to store staging loaded data from the data lake, as well as transformed and cleaned data for analytics
+![Image pg](https://miro.medium.com/0*epnKnkKuLx2RAajt)
+- **Data Modeling - DBT**: provides data models which are responsible for **transforming raw data into clean, reliable, analytics-ready tables**. dbt contributes in this project to build views and incremental models for reporting and logging.
+![img dbt](https://21707327.fs1.hubspotusercontent-na1.net/hubfs/21707327/Dbt.png)
+- **Visualization and reporting - Apache Superset:** **visualization and analytics layer** of a modern data platform. Provides UI to let users **explore, analyze, and visualize** the data stored in your data warehouse through dashboards and interactive charts.
+![img sps](https://blog.ippon.fr/content/images/2020/10/58649580-eca4-11ea-844d-c2ddca24b226.png)
+
+
+## Workflow in details
+
+In this project, the tasks are divided into 2 categories: Daily tasks and Monthly tasks
+### Daily tasks
+
+Daily tasks are scheduled every morning at 6 AM. Including:
+
+#### API JSON Pull, Write as CSV
+
+The task includes the data extract and ingestion steps :
+- Pulling JSON files from GHArchive API
+- Each line from JSON are then collected, restructured and written as csv temporary files.
+- These temporary files will then be uploaded to minio storage. 
+
+![](assets/images/minio_csv.png)
+*Image: raw csv files in Minio Storage*
+
+#### Spark Processing, Staging
+
+In this tasks, the raw .csv files are processed under spark dataframes. For events, users, repos and orgs, lines with the duplicate id will be dropped. At the end, these spark dataframes will be partitionned and rewritten to Minio Storage under .parquet files
+
+![](assets/images/minio_parquet.png)
+
+*Image: staging area in Minio Storage
+
+#### Import to Postgres
+
+All data in the staging area will be imported to the PostgreSQL database following this schema:
+
+![](assets/images/schema.png)
+
+An example of events in `dev.raw_events` table:
+
+![](assets/images/raw_events_example.png)
+
+#### Data Modeling, dbt
+
+In this project, the data models are created base on 3 layers:
+
+The schema below demonstrate the models
+
+![](assets/images/models.png)
+
+##### Layer 1: Staging
+
+With 4 view:
+- stg_events
+- stg_users
+- stg_repos
+- stg_orgs
+
+These staging data models are views with the direct projection of the current raw tables. 
+
+##### Layer 2: Intermediate
+
+This layer will devide the data in the staging area into 3 categories:
+- Event aggregation by event types
+- Event aggregation by users
+- Event aggregation by repositories
+
+Each categories contains models to record the live result ( under view materialisation, by day, by the last 7 days and by the last 30 days ) and logs ( under incremental materialisation, daily and monthly )
+
+##### Layer 3: Data Mart
+
+This layer provides views for the direct serving of visualisation tools. Here, for users and repos, we filter the top 10 most events.
+
+#### Cleaning
+
+After all the ingestion and import tasks are finished, data in the staging area will be removed
+
+#### Visualisation
+
+## Setup instructions
+
+## Example outputs
+
+## Future improvements
+
+## Contact
+
+PHAM Xuan Phuc, Engineering Student in Security and Information Technology at INSA Centre Val de Loire, France.
+LinkedIn: 
+Email: xuanphuc280203@gmail.com
+
+## Annex
+
+### An example of an event JSON
 
 An example of an event ( among milions of events per hour )
 
@@ -141,18 +254,6 @@ An example of an event ( among milions of events per hour )
   "created_at": "2015-01-01T15:00:14Z"
 }
 ```
-
-## Architechture
-
-## Workflow in details
-
-## Setup instructions
-
-## Example outputs
-
-## Future improvements
-
-## Contact
 
 
 

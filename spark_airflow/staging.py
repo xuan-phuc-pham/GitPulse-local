@@ -53,7 +53,7 @@ repo_schema = StructType([
 
 event_df = spark.read.schema(event_schema)\
 .option("header", "true")\
-.csv(f"s3a://airflow/gh_data/events/events_{target_date}_*.csv").dropDuplicates(['id'])
+.csv(f"s3a://airflow/gh_data/events/{target_date}/events_{target_date}_*.csv").dropDuplicates(['id'])
 event_df.show()
 event_df.write.mode("overwrite").parquet(f"s3a://airflow/gh_data_staging/events/{target_date}/")
 del event_df
@@ -61,19 +61,22 @@ del event_df
 
 user_df = spark.read.schema(user_schema)\
 .option("header", "true")\
-.csv(f"s3a://airflow/gh_data/users/users_{target_date}_*.csv").dropDuplicates(['id'])
+.csv(f"s3a://airflow/gh_data/users/{target_date}/users_{target_date}_*.csv").dropDuplicates(['id'])
 user_df.write.mode("overwrite").parquet(f"s3a://airflow/gh_data_staging/users/{target_date}/")
 del user_df
 
 org_df = spark.read.schema(org_schema)\
 .option("header", "true")\
-.csv(f"s3a://airflow/gh_data/orgs/orgs_{target_date}_*.csv").dropDuplicates(['id'])
+.csv(f"s3a://airflow/gh_data/orgs/{target_date}/orgs_{target_date}_*.csv").dropDuplicates(['id'])
 org_df.write.mode("overwrite").parquet(f"s3a://airflow/gh_data_staging/orgs/{target_date}/")
 del org_df
 
 
 repo_df = spark.read.schema(repo_schema)\
 .option("header", "true")\
-.csv(f"s3a://airflow/gh_data/repos/repos_{target_date}_*.csv").dropDuplicates(['id'])
+.csv(f"s3a://airflow/gh_data/repos/{target_date}/repos_{target_date}_*.csv").dropDuplicates(['id'])
 repo_df.write.mode("overwrite").parquet(f"s3a://airflow/gh_data_staging/repos/{target_date}/")
+del repo_df
 
+spark.stop()
+del spark

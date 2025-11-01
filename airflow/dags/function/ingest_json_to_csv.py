@@ -22,6 +22,26 @@ def get_json(url):
 def ingest_json_to_csv(**context):
     date = (context['logical_date'] - timedelta(days=1)).strftime('%Y-%m-%d')
     s3_conn = S3Hook(aws_conn_id='minio_conn') 
+
+    # Cleaning first
+
+    prefixes = [
+        f"gh_data/events/{date}/",
+        f"gh_data/users/{date}/",
+        f"gh_data/repos/{date}/",
+        f"gh_data/orgs/{date}/"
+    ]
+
+    for prefix in prefixes:
+        keys = s3_conn.list_keys(bucket_name='airflow', prefix=prefix)
+        if keys:
+            s3_conn.delete_objects(bucket='airflow', keys=keys)
+            print(f"✅ Deleted {len(keys)} objects under {prefix}")
+        else:
+            print(f"⚠️ No objects found under {prefix}")
+
+    # Writing
+
     for hour in range(24):
         base_url = f"http://data.gharchive.org/{date}-{hour}.json.gz"
         with NamedTemporaryFile("w+", suffix=".csv", delete=True) as e_file,\
@@ -86,25 +106,29 @@ def ingest_json_to_csv(**context):
                     })
             s3_conn.load_file(
                 filename=e_file.name,
-                key=f"gh_data/events/events_{date}_{hour}.csv",
+                key=f"gh_data/events/{date}/events_{date}_{hour}.csv",
                 bucket_name='airflow',
                 replace=True
             )
+            del e_file
             s3_conn.load_file(
                 filename=u_file.name,
-                key=f"gh_data/users/users_{date}_{hour}.csv",
+                key=f"gh_data/users/{date}/users_{date}_{hour}.csv",
                 bucket_name='airflow',
                 replace=True
             )
+            del u_file
             s3_conn.load_file(
                 filename=r_file.name,
-                key=f"gh_data/repos/repos_{date}_{hour}.csv",
+                key=f"gh_data/repos/{date}/repos_{date}_{hour}.csv",
                 bucket_name='airflow',
                 replace=True
             )
+            del r_file
             s3_conn.load_file(
                 filename=o_file.name,
-                key=f"gh_data/orgs/orgs_{date}_{hour}.csv",
+                key=f"gh_data/orgs/{date}/orgs_{date}_{hour}.csv",
                 bucket_name='airflow',
                 replace=True
             )
+            del o_file

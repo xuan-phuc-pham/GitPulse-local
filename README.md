@@ -190,13 +190,16 @@ Is a proper way to shutdown the system such that for the next run, there will no
 ## Example outputs
 
 The current pipeline progress demonstration. The pipeline is still running until now from the 1 October, 2025
+
 ![alt text](assets/images/pipeline.png)
 
 
 Overview of data in Postgres
+
 ![alt text](assets/images/pg.png)
 
 Overview of the data visualisation demonstration
+
 ![alt text](assets/images/git-pulse-local-2025-11-06T08-18-06.599Z.jpg)
 
 

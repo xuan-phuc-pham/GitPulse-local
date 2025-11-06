@@ -1,10 +1,13 @@
 [TOC]
 
-# Local GitPulse - A local and scalable data pipeline recording real-time Github events
+# Local GitPulse - A local and scalable data pipeline recording real-time Github public events
 
 ## Overview
 
 This project implements an end to end data pipeline that **E**xtract github events data from **[GH Archive API](https://www.gharchive.org/)** and stores them to a staging area. The staging data will be **T**ransformed, restructured and then **L**oaded to a local database as my Data Warehouse solution. From that, various data models will be built for visualisation and analysis.
+
+Every day in Github, there are over 4 milion public actions recored. The **[GH Archive API](https://www.gharchive.org/)** records the public actions. The contribution of this project is to give an insight view on this data while still demonstrating the process of data processing by workflow.
+
 ## Tech stack
 
 The whole project is executed in **Docker containers** which contain the following components:
@@ -124,9 +127,86 @@ After all the ingestion and import tasks are finished, data in the staging area 
 
 ## Setup instructions
 
+### Prequisites
+
+For installing this data pipeline, you will need:
+- A machine (Real, VM), ideal with Linux based OS
+- Docker
+- Git
+And that's all !
+
+### Setup the infrastructure
+
+First, you need to clone the repository
+
+```bash
+git clone https://github.com/xuan-phuc-pham/GitPulse-local.git
+```
+
+For the first time, you need to build the images
+```bash
+docker compose up --build
+```
+
+For the following run, you just need to run the containers
+```bash
+docker compose up
+```
+
+We have several components, let set up first the credential for Minio
+
+Go to the Minio page: `http://<your_host_ip>:9000`, credentials will be:
+- Username : `xpham`
+- Password : `xpham_minio`
+Of course you can modify it on `docker-compose.yaml`
+
+Go on Access Keys, you will need to create 2 access keys:
+- One for Spark access: With access key `testuser` and secret key `password`
+- One default key for Airflow access, with the default given access key and secret key. This default key will be downloaded and paste on the file `setup_airflow.sh`.
+
+```
+docker compose exec af bash -c "airflow connections add minio_conn \
+--conn-type aws \
+--conn-extra '{\"aws_access_key_id\": \"<your access key goes here>\", \"aws_secret_access_key\": \"your secret key goes here\", \"endpoint_url\": \"http://minio:9000\"}'"
+```
+
+Once the images are built and the containers are run, you need to make sure that Airflow is initialised (by looking at the log). Then execute the setup for airflow
+
+```bash
+sudo bash setup_airflow
+```
+
+Now the infrastructure is initialised
+
+### Down
+
+Using this command:
+```bash
+sudo bash docker_compose_down.sh
+```
+
+Is a proper way to shutdown the system such that for the next run, there will not be errors (concerning to the connection)
+
 ## Example outputs
 
+The current pipeline progress demonstration. The pipeline is still running until now from the 1 October, 2025
+![alt text](assets/images/pipeline.png)
+
+
+Overview of data in Postgres
+![alt text](assets/images/pg.png)
+
+Overview of the data visualisation demonstration
+![alt text](assets/images/git-pulse-local-2025-11-06T08-18-06.599Z.jpg)
+
+
 ## Future improvements
+
+- Run a monthly pipeline 
+  - For removing residual fact data
+  - For creating a monthly data models which reports statistic each month
+
+
 
 ## Contact
 

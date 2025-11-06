@@ -7,7 +7,7 @@ from function.import_to_pg import import_to_postgres
 default_args = {
     'owner': 'xpham',
     'depends_on_past': True,
-    'start_date': datetime(2025, 9, 1),
+    'start_date': datetime(2025, 10, 2),
     'retries': 5,
     'retry_delay': timedelta(minutes=1),
 }

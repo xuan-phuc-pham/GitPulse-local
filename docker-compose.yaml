@@ -41,12 +41,9 @@ services:
       - "8000:8080"
     environment:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@db:5432/airflow_db
+      AIRFLOW__API__EXPOSE_CONFIG: True
     volumes:
-      - ./airflow/dags:/opt/airflow/dags
-      - ./airflow/logs:/opt/airflow/logs
-      - ./airflow/config:/opt/airflow/config
-      - ./airflow/plugins:/opt/airflow/plugins
-      - ./airflow/data:/opt/airflow/data
+      - ./airflow:/opt/airflow
       - ./spark_airflow:/opt/shared/spark_airflow
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:

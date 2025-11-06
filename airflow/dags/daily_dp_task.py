@@ -12,7 +12,7 @@ from function.import_to_pg import import_to_postgres
 default_args = {
     'owner': 'xpham',
     'depends_on_past': True,
-    'start_date': datetime(2025, 10, 30 ),
+    'start_date': datetime(2025, 10, 2 ),
     # 'end_date': datetime(2025, 8, 4 ),
     'retries': 5,
     'retry_delay': timedelta(minutes=1),
@@ -49,7 +49,7 @@ def dbt_daily_run(**context):
     docker_task.execute(context=context)
 
 with DAG(
-    dag_id='gitpulse_daily_pipeline_v1',
+    dag_id='gitpulse_daily_pipeline_v0',
     default_args=default_args,
     schedule="0 6 * * *",  # Runs every day at 6:00
     catchup=True,
@@ -59,7 +59,7 @@ with DAG(
         task_id='ingest_json_to_csv',
         python_callable=ingest_json_to_csv,
     )
-
+    
     staging_task = PythonOperator(
         task_id="dynamic_spark_submit",
         python_callable=staging,

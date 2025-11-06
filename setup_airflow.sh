@@ -1,8 +1,5 @@
 #!/bin/bash
 
-docker compose exec af bash -c "cp /opt/airflow/simple_auth_manager_passwords.json.generated /opt/airflow/data"
-
-
 docker compose exec af bash -c "airflow connections add spark_conn --conn-type spark --conn-host spark://spark-master --conn-port 7077"
 
 docker compose exec af bash -c "airflow connections add minio_conn \

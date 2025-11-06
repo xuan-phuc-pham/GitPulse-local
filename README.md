@@ -211,7 +211,9 @@ Overview of the data visualisation demonstration
 ## Contact
 
 PHAM Xuan Phuc, Engineering Student in Security and Information Technology at INSA Centre Val de Loire, France.
-LinkedIn: 
+
+[LinkedIn](https://www.linkedin.com/in/xphuc-pham/)
+
 Email: xuanphuc280203@gmail.com
 
 ## Annex
